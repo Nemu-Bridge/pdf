@@ -1,0 +1,49 @@
+{
+  "name": "@nemu-ai/pdf",
+  "version": "1.0.0",
+  "description": "A modern PDF generation library with theming and vector support",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "bun run scripts/build.ts",
+    "dev": "bun run --watch examples/basic.ts",
+    "test": "bun test",
+    "lint": "eslint src/",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "pdf",
+    "pdf-generation",
+    "pdfkit",
+    "theming",
+    "typescript"
+  ],
+  "author": "Dragos <dragos@nemu.cc> (https://dragos.cc/)",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/pdfkit": "^0.17.5",
+    "eslint": "^10.0.2",
+    "typescript": "^5.0.0",
+    "typescript-eslint": "^8.56.1"
+  },
+  "dependencies": {
+    "pdfkit": "^0.17.2"
+  },
+  "engines": {
+    "bun": ">=1.0.0"
+  }
+}
