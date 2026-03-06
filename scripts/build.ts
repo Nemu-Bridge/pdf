@@ -136,6 +136,7 @@ async function main(): Promise<void> {
     target: "bun",
     format: "esm",
     naming: "[name].mjs",
+    external: ["pdfkit"],
   });
 
   if (!esm_result.success) {
@@ -154,6 +155,7 @@ async function main(): Promise<void> {
     target: "bun",
     format: "cjs",
     naming: "[name].js",
+    external: ["pdfkit"],
   });
 
   if (!cjs_result.success) {

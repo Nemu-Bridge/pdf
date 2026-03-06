@@ -1,6 +1,6 @@
 {
   "name": "@nemu-ai/pdf",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "A modern PDF generation library with theming and vector support",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
