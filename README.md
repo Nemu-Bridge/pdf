@@ -1,5 +1,3 @@
-# @nemu-ai/pdf
-
 A modern PDF generation library with vector-based positioning and theming support.
 
 ## Installation
