@@ -22,7 +22,7 @@ export const parse_color = (color_str: string): ColorValue => {
   }
 
   const rgb_match = color_str.match(
-    /^rgb\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/i
+    /^rgb\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/i,
   );
   if (rgb_match && rgb_match[1] && rgb_match[2] && rgb_match[3]) {
     return {
@@ -37,7 +37,7 @@ export const parse_color = (color_str: string): ColorValue => {
 
 export const parse_dimension = (
   value: number | string | undefined,
-  reference: number
+  reference: number,
 ): number => {
   if (value === undefined) return 0;
   if (typeof value === "number") return value;
@@ -61,7 +61,7 @@ export const parse_dimension = (
 };
 
 export const normalize_margin = (
-  margin: number | Partial<MarginValues> | undefined
+  margin: number | Partial<MarginValues> | undefined,
 ): MarginValues => {
   if (margin === undefined) {
     return { top: 0, right: 0, bottom: 0, left: 0 };
@@ -143,7 +143,7 @@ export const expand_shorthand = (style: StyleProperties): StyleProperties => {
 
 export const merge_styles = (
   base: StyleProperties,
-  override: StyleProperties
+  override: StyleProperties,
 ): StyleProperties => {
   return {
     ...base,

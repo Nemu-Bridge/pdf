@@ -12,8 +12,8 @@ export const DEFAULT_FONT_SIZE = 12;
 export const DEFAULT_LINE_HEIGHT = 1.2;
 export const DEFAULT_FONT_FAMILY = "Helvetica";
 
-export const PDF_VERSION = "1.4";
-export const PDF_CREATOR = "PDF Generator";
+export const PDF_VERSION = "2.0";
+export const PDF_CREATOR = "@nemu-ai/pdf";
 
 export const STANDARD_FONTS = [
   "Helvetica",

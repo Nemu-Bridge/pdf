@@ -9,6 +9,7 @@ export interface DocumentOptions {
   page_size?: PageSize;
   custom_dimensions?: PageDimensions;
   margin?: number | MarginValues;
+  parse_markdown?: boolean;
 }
 
 export interface MarginValues {
@@ -71,7 +72,14 @@ export interface StyleProperties {
   word_break?: "normal" | "break-all" | "keep-all";
   word_wrap?: "normal" | "break-word";
   text_overflow?: "clip" | "ellipsis";
-  vertical_align?: "baseline" | "top" | "middle" | "bottom" | "sub" | "super" | string;
+  vertical_align?:
+    | "baseline"
+    | "top"
+    | "middle"
+    | "bottom"
+    | "sub"
+    | "super"
+    | string;
   visibility?: "visible" | "hidden" | "collapse";
 }
 
@@ -82,58 +90,59 @@ export interface ElementBounds {
   height: number;
 }
 
-export interface FontDefinition {
-  name: string;
-  family: string;
-  data: Buffer;
-  subtype: "Type1" | "TrueType";
-}
-
-export interface ImageDefinition {
-  name: string;
+export interface BoundingBox {
+  x: number;
+  y: number;
   width: number;
   height: number;
-  data: Buffer;
-  format: "png" | "jpeg";
 }
 
-export interface PdfObject {
-  id: number;
-  generation: number;
-  content: string;
+export type LayoutMode = "explicit" | "flow";
+
+export interface MeasuredSize {
+  width: number;
+  height: number;
 }
 
-export interface PdfStream {
-  length: number;
-  content: string;
-  filters?: string[];
+export type FlexDirection = "row" | "column";
+export type FlexJustify =
+  | "flex-start"
+  | "flex-end"
+  | "center"
+  | "space-between"
+  | "space-around"
+  | "space-evenly";
+export type FlexAlign =
+  | "flex-start"
+  | "flex-end"
+  | "center"
+  | "stretch"
+  | "baseline";
+
+export interface FlexLayoutOptions {
+  type: "flex";
+  direction: FlexDirection;
+  justify?: FlexJustify;
+  align?: FlexAlign;
+  gap?: number;
 }
 
-export abstract class Element {
-  style: StyleProperties;
-  bounds: ElementBounds;
-
-  constructor(style: StyleProperties = {}) {
-    this.style = style;
-    this.bounds = { x: 0, y: 0, width: 0, height: 0 };
-  }
-
-  abstract render(context: RenderContext): string;
-  abstract calculate_layout(
-    available_width: number,
-    available_height: number
-  ): ElementBounds;
+export interface FlowLayoutOptions {
+  type: "flow";
+  gap?: number;
 }
 
-export interface RenderContext {
+export type ContainerLayout = FlexLayoutOptions | FlowLayoutOptions;
+
+export interface IDocument {
+  pdf_doc: any;
+  fonts: Map<string, { name: string; path: string; registered: boolean }>;
+  images: Map<
+    string,
+    { name: string; path: string; width: number; height: number }
+  >;
+  parse_markdown: boolean;
+  margin: MarginValues;
   page_width: number;
   page_height: number;
-  margin_top: number;
-  margin_right: number;
-  margin_bottom: number;
-  margin_left: number;
-  fonts: Map<string, FontDefinition>;
-  images: Map<string, ImageDefinition>;
-  current_y: number;
-  page_number: number;
 }

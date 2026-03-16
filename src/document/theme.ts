@@ -90,7 +90,7 @@ export class Theme {
   define_classname(definitions: Array<string | StyleProperties>): void;
   define_classname(
     name_or_definitions: string | Array<string | StyleProperties>,
-    style?: StyleProperties
+    style?: StyleProperties,
   ): void {
     if (typeof name_or_definitions === "string" && style) {
       this.classnames.set(name_or_definitions, style);
@@ -128,7 +128,7 @@ export class Theme {
 
   merge_classname(
     base_style: StyleProperties,
-    classname: string
+    classname: string,
   ): StyleProperties {
     const class_style = this.classnames.get(classname);
     if (!class_style) {
@@ -159,7 +159,7 @@ export class Theme {
 
   apply_to_style(
     base_style: StyleProperties,
-    element_type: "heading" | "text" | "container" | "shape" = "text"
+    element_type: "heading" | "text" | "container" | "shape" = "text",
   ): StyleProperties {
     const themed_style: StyleProperties = { ...base_style };
 
@@ -190,7 +190,7 @@ export class Theme {
 
 export const create_theme = (
   name: string,
-  definition?: Partial<ThemeDefinition>
+  definition?: Partial<ThemeDefinition>,
 ): Theme => {
   return new Theme(name, definition);
 };
