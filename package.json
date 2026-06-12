@@ -1,6 +1,6 @@
 {
   "name": "@nemu-ai/pdf",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "description": "PDF generation for Node and Bun with a declarative document API and a low level element API, bundled variable fonts with real weights, LaTeX math, native charts, and theming.",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
@@ -46,7 +46,7 @@
     "type": "git",
     "url": "git+https://github.com/Nemu-Bridge/pdf.git"
   },
-  "homepage": "https://github.com/Nemu-Bridge/pdf#readme",
+  "homepage": "https://docs.nemu.cc/packages/pdf",
   "bugs": {
     "url": "https://github.com/Nemu-Bridge/pdf/issues"
   },
