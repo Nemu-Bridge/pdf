@@ -4,6 +4,7 @@ export {
   available_formula_fonts,
   default_formula_font,
 } from "./doc/mathjax";
+export { FormulaElement } from "./doc/formula";
 export { Theme, create_theme } from "./document/theme";
 export { Vector, vector } from "./lib/vector";
 export { Color } from "./lib/color";

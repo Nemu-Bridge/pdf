@@ -80,6 +80,22 @@ export class InlineFlowElement extends BaseElement {
     return this.style.font_size ?? DEFAULT_FONT_SIZE;
   }
 
+  private text_metrics(pdoc: any): { ascent: number; descent: number } {
+    const family = resolve_font_family(this.style, this._document!);
+    const size = this.font_size();
+    pdoc.font(family).fontSize(size);
+    const f = pdoc._font;
+    const ascent =
+      f && typeof f.ascender === "number"
+        ? (f.ascender / 1000) * size
+        : size * 0.8;
+    const descent =
+      f && typeof f.descender === "number"
+        ? (Math.abs(f.descender) / 1000) * size
+        : size * 0.2;
+    return { ascent, descent };
+  }
+
   private build_tokens(): void {
     if (this.prepared) return;
     this.prepared = true;
@@ -181,8 +197,9 @@ export class InlineFlowElement extends BaseElement {
 
   private layout(pdoc: any, max_width: number): Line[] {
     const size = this.font_size();
-    const text_ascent = size * 0.74;
-    const text_descent = size * 0.24;
+    const metrics = this.text_metrics(pdoc);
+    const text_ascent = metrics.ascent;
+    const text_descent = metrics.descent;
     const lines: Line[] = [];
     let items: Placed[] = [];
     let width = 0;
@@ -247,6 +264,7 @@ export class InlineFlowElement extends BaseElement {
     const gap = line_gap(this.style, size);
     const inner = this.box_width - padding.left - padding.right;
     const base_color = color_css(this.style.color);
+    const metrics = this.text_metrics(pdoc);
 
     const lines = this.layout(pdoc, inner);
     let y = pos.y + padding.top;
@@ -268,7 +286,7 @@ export class InlineFlowElement extends BaseElement {
         pdoc.font(font).fontSize(size);
         if (token.color) pdoc.fillColor(token.color);
         else if (base_color) pdoc.fillColor(base_color);
-        pdoc.text(token.text, x0 + placed.x, baseline - size * 0.74, {
+        pdoc.text(token.text, x0 + placed.x, baseline - metrics.ascent, {
           lineBreak: false,
           width: placed.width,
           underline: !!token.underline,

@@ -1,4 +1,4 @@
-import { Document, create_theme } from "@nemu-ai/pdf";
+import { Document, create_theme, FormulaElement } from "@nemu-ai/pdf";
 
 const pdf = new Document({ page_size: "A4", margin: 50, parse_markdown: true });
 
@@ -123,6 +123,17 @@ const p2 = pdf.create_page(theme);
 make_header(p2, "LaTeX & Math");
 make_footer(p2, "2");
 
+const formula_heading = (text: string) =>
+  p2.text({
+    content: text,
+    style: {
+      font_size: 14,
+      color: theme.get_color("secondary"),
+      padding_top: 12,
+      padding_bottom: 2,
+    },
+  });
+
 p2.add(
   p2.text({
     content: "LaTeX & Math Formulas",
@@ -130,82 +141,37 @@ p2.add(
   }),
   p2.text({
     content:
-      "Formulas inside $...$ (inline) and $$...$$ (block) are parsed and converted to readable text. Greek letters and most math symbols require a Unicode font registered on the document; with standard built in fonts only Latin 1 characters render correctly.",
+      "Formulas are typeset with MathJax and embedded as vector paths, so full LaTeX renders faithfully - Greek letters, fractions, roots, integrals, and sums all included.",
     style: {
       font_size: 12,
       color: theme.get_color("muted"),
       padding_top: 6,
-      padding_bottom: 14,
+      padding_bottom: 8,
     },
   }),
 
-  p2.text({
-    content: "Superscripts (Latin 1 safe)",
-    style: {
-      font_size: 14,
-      color: theme.get_color("secondary"),
-      padding_bottom: 4,
-    },
-  }),
-  p2.text({ content: "Pythagorean theorem: $a^2 + b^2 = c^2$" }),
-  p2.text({
-    content: "Energy mass equivalence: $E = mc^2$",
-    style: { padding_top: 4 },
-  }),
-  p2.text({
-    content: "Cube: $x^3 - y^3 = (x - y)(x^2 + xy + y^2)$",
-    style: { padding_top: 4 },
-  }),
+  formula_heading("Identities"),
+  new FormulaElement("a^2 + b^2 = c^2", { font_size: 15 }),
+  new FormulaElement("e^{i\\pi} + 1 = 0", { font_size: 15 }),
+  new FormulaElement("x^3 - y^3 = (x - y)(x^2 + xy + y^2)", { font_size: 15 }),
 
-  p2.text({
-    content: "Operators (Latin 1 safe)",
-    style: {
-      font_size: 14,
-      color: theme.get_color("secondary"),
-      padding_top: 14,
-      padding_bottom: 4,
-    },
+  formula_heading("Fractions and roots"),
+  new FormulaElement("x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}", {
+    font_size: 15,
   }),
-  p2.text({
-    content: "Arithmetic: $a \\times b$, $a \\div b$, $a \\pm b$, $a \\cdot b$",
-  }),
-  p2.text({ content: "Negation: $\\neg p$", style: { padding_top: 4 } }),
+  new FormulaElement("\\phi = \\frac{1 + \\sqrt{5}}{2}", { font_size: 15 }),
 
-  p2.text({
-    content: "Fractions and roots",
-    style: {
-      font_size: 14,
-      color: theme.get_color("secondary"),
-      padding_top: 14,
-      padding_bottom: 4,
-    },
+  formula_heading("Calculus and sums"),
+  new FormulaElement("\\int_0^\\infty e^{-x^2}\\,dx = \\frac{\\sqrt{\\pi}}{2}", {
+    font_size: 15,
   }),
-  p2.text({
-    content: "Quadratic formula: $x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$",
-  }),
-  p2.text({
-    content: "Golden ratio: $\\phi = \\frac{1 + \\sqrt{5}}{2}$",
-    style: { padding_top: 4 },
-  }),
+  new FormulaElement("\\sum_{k=1}^{n} k = \\frac{n(n+1)}{2}", { font_size: 15 }),
 
-  p2.text({
-    content: "Combined markdown and LaTeX",
-    style: {
-      font_size: 14,
-      color: theme.get_color("secondary"),
-      padding_top: 14,
-      padding_bottom: 4,
-    },
-  }),
-  p2.text({
-    content:
-      "The **energy mass equivalence** $E = mc^2$ is one of the most famous equations in physics. *Einstein* derived it from special relativity ($v \\leq c$).",
-  }),
-  p2.text({
-    content:
-      "A quadratic $ax^2 + bx + c = 0$ has discriminant $\\Delta = b^2 - 4ac$.",
-    style: { padding_top: 6 },
-  }),
+  formula_heading("Greek and set notation"),
+  new FormulaElement(
+    "\\forall \\varepsilon > 0, \\; \\exists \\delta > 0 : |x - a| < \\delta",
+    { font_size: 15 },
+  ),
 );
 
 const p3 = pdf.create_page(theme);
