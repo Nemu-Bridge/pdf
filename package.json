@@ -1,0 +1,101 @@
+{
+  "name": "@nemu-ai/pdf",
+  "version": "1.5.1",
+  "description": "PDF generation for Node and Bun with a declarative document API and a low level element API, bundled variable fonts with real weights, LaTeX math, native charts, and theming.",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "llms.txt"
+  ],
+  "scripts": {
+    "build": "bun run scripts/build.ts",
+    "dev": "bun run --watch examples/showcase/index.ts",
+    "test": "bun test",
+    "lint": "eslint src/",
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "prepublishOnly": "bun run build"
+  },
+  "keywords": [
+    "pdf",
+    "pdf-generation",
+    "pdfkit",
+    "typescript",
+    "latex",
+    "mathjax",
+    "charts",
+    "variable-fonts",
+    "fonts",
+    "declarative",
+    "document",
+    "theming"
+  ],
+  "author": "Dragos <dragos@nemu.cc> (https://dragos.cc/)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Nemu-Bridge/pdf.git"
+  },
+  "homepage": "https://github.com/Nemu-Bridge/pdf#readme",
+  "bugs": {
+    "url": "https://github.com/Nemu-Bridge/pdf/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@eslint/json": "^2.0.0",
+    "@mathjax/mathjax-newcm-font": "4.1.2",
+    "@types/bun": "latest",
+    "@types/pdfkit": "^0.17.5",
+    "eslint": "^10.0.2",
+    "globals": "^17.6.0",
+    "harfbuzzjs": "^1.2.1",
+    "jiti": "^2.7.0",
+    "typescript": "^5.0.0",
+    "typescript-eslint": "^8.56.1"
+  },
+  "dependencies": {
+    "@mathjax/mathjax-termes-font": "4.1.2",
+    "@mathjax/src": "4.1.2",
+    "pdfkit": "^0.17.2",
+    "svg-to-pdfkit": "^0.1.8"
+  },
+  "peerDependencies": {
+    "@mathjax/mathjax-fira-font": "4.x",
+    "@mathjax/mathjax-modern-font": "4.x",
+    "@mathjax/mathjax-newcm-font": "4.x",
+    "@mathjax/mathjax-pagella-font": "4.x",
+    "@mathjax/mathjax-stix2-font": "4.x"
+  },
+  "peerDependenciesMeta": {
+    "@mathjax/mathjax-fira-font": {
+      "optional": true
+    },
+    "@mathjax/mathjax-modern-font": {
+      "optional": true
+    },
+    "@mathjax/mathjax-newcm-font": {
+      "optional": true
+    },
+    "@mathjax/mathjax-pagella-font": {
+      "optional": true
+    },
+    "@mathjax/mathjax-stix2-font": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

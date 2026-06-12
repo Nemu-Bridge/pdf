@@ -1,0 +1,564 @@
+# @nemu-ai/pdf
+
+PDF generation for Node and Bun. Two APIs ship from the same package: a declarative
+`Doc` for writing documents as content blocks, and a low level `Document` for placing
+elements with full control. Both render through one engine, embed fonts, draw vector
+graphics, typeset LaTeX through MathJax, and ship six variable fonts that produce real
+weights from thin to black.
+
+This file is a map of the public surface for code generation. Every type and signature
+below is exported. Prefer `Doc` for reports, articles, and anything content shaped.
+Reach for `Document` when you need exact coordinates, custom layout, or per element control.
+
+## Install
+
+```
+npm install @nemu-ai/pdf
+```
+
+Runtime is Node 18+ or Bun. Fonts and the harfbuzz instancer are bundled, so nothing
+else is required. LaTeX uses the bundled `termes` math font; other math fonts are optional.
+
+## Imports
+
+```ts
+import {
+  Doc,
+  DocPage,
+  Document,
+  Page,
+  Color,
+  Theme,
+  create_theme,
+  Vector,
+  vector,
+  available_formula_fonts,
+  default_formula_font,
+  BaseElement,
+  TextElement,
+  RectElement,
+  ImageElement,
+  ContainerElement,
+  TableElement,
+  HeaderContainer,
+  FooterContainer,
+} from "@nemu-ai/pdf";
+
+import type {
+  Block,
+  Inline,
+  InlineContent,
+  DocOptions,
+  PageConfig,
+  PageContext,
+  HeaderFooter,
+  RawDraw,
+  DrawArea,
+  RoleStyles,
+  StyleRole,
+  TableCell,
+  TableRow,
+  ChartKind,
+  ChartData,
+  ChartSeries,
+  ChartSlice,
+  StyleProperties,
+  DocumentOptions,
+  PageSize,
+  PageDimensions,
+  MarginValues,
+  ColorLike,
+  ColorInput,
+  ColorValue,
+  ContainerLayout,
+  FlexLayoutOptions,
+  FlowLayoutOptions,
+} from "@nemu-ai/pdf";
+```
+
+---
+
+# Doc: the declarative API
+
+A `Doc` is a list of pages, each page is a list of content blocks. You describe what the
+document contains, set role styles once, and call `build`. Pagination, headers, footers,
+and font loading are handled for you.
+
+```ts
+const doc = new Doc({ page_size: "A4", margin: 54, padding: 10 });
+
+doc.set_style({
+  heading: { font_family: "inter", color: "#111827" },
+  paragraph: { font_family: "source-serif-4", font_size: 11.5, line_height: 1.6 },
+  link: { color: "#2563eb" },
+});
+
+doc.page().content(
+  { type: "heading", text: "Quarterly Report", level: 1 },
+  { type: "paragraph", text: "Revenue grew across every region this quarter." },
+  { type: "note", variant: "info", title: "Note", text: "Figures are unaudited." },
+);
+
+await doc.build("report.pdf");
+```
+
+`new Doc(options)` enables markdown parsing on string text by default. Structured inline
+nodes always format regardless of that flag.
+
+## Doc methods
+
+```ts
+new Doc(options?: DocOptions)
+doc.set_style(styles: RoleStyles): this
+doc.set_header(header: HeaderFooter): this
+doc.set_footer(footer: HeaderFooter): this
+doc.load_font(name: string, path: string, variable?: boolean): this
+doc.load_image(name: string, path: string): this
+doc.page(config?: PageConfig): DocPage
+await doc.build(file_path: string): Promise<void>
+
+page.content(...items: Array<Block | Block[]>): this
+```
+
+`content` flattens arrays, so a component that returns `Block[]` can be spread inline.
+`load_font` with `variable: true` enables weight instancing for a custom variable font.
+
+```ts
+interface DocOptions extends DocumentOptions {
+  padding?: number | MarginValues;
+  header?: HeaderFooter;
+  footer?: HeaderFooter;
+  auto_paginate?: boolean;
+}
+interface PageConfig {
+  header?: HeaderFooter;
+  footer?: HeaderFooter;
+}
+```
+
+Margin and padding are summed into the page content inset. Pagination is on by default;
+set `auto_paginate: false` to keep each page literal.
+
+## Blocks
+
+Every block is a tagged object. `style` overrides the role style for that one block.
+
+```ts
+type Block =
+  | { type: "heading"; text: InlineContent; level?: 1 | 2 | 3 | 4 | 5 | 6; style?: StyleProperties }
+  | { type: "paragraph"; text: InlineContent; style?: StyleProperties }
+  | { type: "code"; text: string; language?: string; style?: StyleProperties }
+  | { type: "formula"; text: string; style?: StyleProperties }
+  | { type: "list"; items: InlineContent[]; ordered?: boolean; style?: StyleProperties }
+  | { type: "image"; src: string; width?: number; height?: number; style?: StyleProperties }
+  | { type: "divider"; style?: StyleProperties }
+  | { type: "spacer"; size?: number }
+  | { type: "note"; text: InlineContent; title?: InlineContent; variant?: "info" | "warn" | "success" | "muted"; style?: StyleProperties }
+  | { type: "table"; rows: TableRow[]; headers?: TableRow; columns?: number | number[]; style?: StyleProperties }
+  | { type: "chart"; chart: ChartKind; data: ChartData; height?: number; title?: string; legend?: boolean; style?: StyleProperties }
+  | { type: "group"; children: Block[]; gap?: number; style?: StyleProperties };
+```
+
+`group` keeps its children together so a heading and its paragraph never split across a
+page break. `spacer` adds vertical space. `divider` draws a horizontal rule. `image` and
+`src` reference a path or a name registered with `load_image`. `code` renders in a tinted
+monospace block; `language` is a label only and does not enable syntax highlighting.
+
+## Inline content
+
+Anywhere a block takes `text`, it accepts a string, one inline node, or an array mixing
+both. Inline nodes nest, so a link can contain a formula and a strong run can contain a link.
+
+```ts
+type Inline =
+  | { type: "strong"; text: InlineContent }
+  | { type: "em"; text: InlineContent }
+  | { type: "strike"; text: InlineContent }
+  | { type: "link"; text: InlineContent; href: string }
+  | { type: "formula"; text: string }
+  | { type: "code"; text: string };
+
+type InlineContent = string | Inline | Array<string | Inline>;
+```
+
+```ts
+{
+  type: "paragraph",
+  text: [
+    "See the ",
+    { type: "link", href: "https://example.com", text: { type: "strong", text: "spec" } },
+    " and the identity ",
+    { type: "formula", text: "e^{i\\pi} + 1 = 0" },
+    ".",
+  ],
+}
+```
+
+When markdown is enabled, plain strings also honor `**bold**`, `*italic*`, `~~strike~~`,
+and `$inline math$`. Structured inline nodes are the reliable path for generated content.
+
+## Styling and roles
+
+Styles are plain objects. `set_style` assigns a default style per role; block level `style`
+merges on top. Roles:
+
+```ts
+type StyleRole =
+  | "heading" | "paragraph" | "code" | "formula" | "list"
+  | "link" | "group" | "divider" | "note" | "table" | "chart";
+
+type RoleStyles = Partial<Record<StyleRole, StyleProperties>>;
+```
+
+`StyleProperties` is a CSS like bag. The fields that matter most for documents:
+
+```ts
+interface StyleProperties {
+  color?: ColorLike;
+  background_color?: ColorLike;
+  font_family?: string;
+  font_size?: number;
+  font_weight?: "normal" | "bold" | number;
+  font?: string;              // formula math font name
+  line_height?: number;
+  text_align?: "left" | "center" | "right" | "justify";
+  text_markdown?: boolean;    // opt string parts into markdown parsing
+  margin?: number | string;   // also margin_top / margin_right / margin_bottom / margin_left
+  padding?: number | string;  // also padding_top / ... per side
+  width?: number | string;
+  height?: number | string;
+}
+```
+
+`color` and `background_color` take a hex string or a `Color`. `font_weight` accepts a
+weight name or a number and produces a real instance from the variable font (see Fonts).
+
+## Fonts and weights
+
+Six variable fonts are bundled and registered automatically. Use them by name in
+`font_family`: `inter`, `geist`, `geist-mono`, `nunito-sans`, `roboto`, `source-serif-4`.
+
+`font_weight` selects a real weight by instancing the variable font at build time. Names
+map to the usual axis values, and numbers pass straight through.
+
+```ts
+{ type: "paragraph", text: "Heavy", style: { font_family: "inter", font_weight: "black" } }
+{ type: "paragraph", text: "Light", style: { font_family: "inter", font_weight: 300 } }
+```
+
+Names: `thin` 100, `extralight` 200, `light` 300, `regular` 400, `medium` 500,
+`semibold` 600, `bold` 700, `extrabold` 800, `black` 900. Markdown `**bold**` and the
+`strong` inline node also produce a real bold weight. The bundled fonts are upright only,
+so italic renders upright. Load a custom variable font with `doc.load_font(name, path, true)`.
+
+## Formulas
+
+Block and inline `formula` text is LaTeX, typeset by MathJax to vector paths. The default
+math font is `termes`. Other fonts are optional installs.
+
+```ts
+available_formula_fonts // ["termes", "newcm", "modern", "pagella", "stix2", "fira"]
+default_formula_font    // "termes"
+```
+
+Pick a math font and size through the `formula` role or a block style:
+
+```ts
+doc.set_style({ formula: { font: "termes", font_size: 13, color: "#111827" } });
+{ type: "formula", text: "\\int_0^\\infty e^{-x^2}\\,dx = \\frac{\\sqrt{\\pi}}{2}" }
+```
+
+Non default fonts need their package, for example `npm i @mathjax/mathjax-pagella-font`.
+A missing font logs a warning and falls back to `termes`.
+
+## Tables
+
+```ts
+type TableCell = { text: InlineContent; align?: "left" | "center" | "right" };
+type TableRow = Array<string | TableCell>;
+```
+
+```ts
+{
+  type: "table",
+  headers: ["Metric", "Q3", "Q4"],
+  rows: [
+    ["Revenue", "1.2M", { text: { type: "strong", text: "1.6M" }, align: "right" }],
+    ["Margin", "18%", { text: "24%", align: "right" }],
+  ],
+}
+```
+
+Cells are a string or a `TableCell`. A cell `text` accepts inline content, so bold, links,
+and inline formulas work inside cells. `columns` is optional; omit it to size columns
+equally from the header or first row. Set it to a count for equal columns, or to an array
+of absolute widths in points where `0` means auto, for example `columns: [180, 0, 100]`.
+
+## Charts
+
+Charts render as native vector graphics, no image step.
+
+```ts
+type ChartKind = "bar" | "line" | "area" | "pie" | "donut";
+
+interface ChartSeries { name?: string; values: number[]; color?: ColorLike }
+interface ChartSlice  { label: string; value: number; color?: ColorLike }
+interface ChartData   { labels?: string[]; series?: ChartSeries[]; slices?: ChartSlice[] }
+```
+
+`bar`, `line`, and `area` read `labels` and `series`. `pie` and `donut` read `slices`.
+
+```ts
+{
+  type: "chart",
+  chart: "bar",
+  title: "Revenue by quarter",
+  legend: true,
+  height: 220,
+  data: {
+    labels: ["Q1", "Q2", "Q3", "Q4"],
+    series: [
+      { name: "2024", values: [12, 19, 14, 23], color: "#111827" },
+      { name: "2025", values: [16, 22, 20, 28], color: "#9ca3af" },
+    ],
+  },
+}
+```
+
+```ts
+{
+  type: "chart",
+  chart: "donut",
+  data: { slices: [
+    { label: "Direct", value: 45 },
+    { label: "Partner", value: 30 },
+    { label: "Online", value: 25 },
+  ] },
+}
+```
+
+## Headers, footers, and raw drawing
+
+A header or footer is a block, an array of blocks, a function of page context, or a raw
+draw callback. Functions run per page at build time.
+
+```ts
+type PageContext = { page_number: number; page_count: number; date: Date };
+
+interface DrawArea extends PageContext { x: number; y: number; width: number; height: number }
+interface RawDraw { height: number; draw: (doc: any, area: DrawArea) => void }
+
+type HeaderFooter =
+  | Block
+  | Block[]
+  | ((ctx: PageContext) => Block | Block[])
+  | RawDraw;
+```
+
+```ts
+doc.set_footer((ctx) => ({
+  type: "paragraph",
+  text: `Page ${ctx.page_number} of ${ctx.page_count}`,
+  style: { font_size: 9, color: "#9ca3af", text_align: "right" },
+}));
+
+doc.set_header({
+  height: 40,
+  draw: (pdoc, area) => {
+    pdoc.rect(area.x, area.y + area.height - 1, area.width, 1).fill("#e5e7eb");
+  },
+});
+```
+
+The raw draw callback receives the live pdfkit document and the zone rectangle. Set per
+page headers and footers through `doc.page({ header, footer })`.
+
+## Reusable components
+
+A component is a function that returns a block or an array of blocks. Spread it into `content`.
+
+```ts
+const callout = (title: string, body: InlineContent): Block =>
+  ({ type: "note", variant: "info", title, text: body });
+
+const section = (title: string, body: InlineContent): Block[] => [
+  { type: "heading", text: title, level: 2 },
+  { type: "paragraph", text: body },
+];
+
+doc.page().content(
+  ...section("Overview", "What this document covers."),
+  callout("Heads up", "This value is provisional."),
+);
+```
+
+---
+
+# Document: the low level API
+
+`Document` places elements directly. You create pages, build elements with the page
+factories, add them to the page or to containers, and call `build`. Elements flow top to
+bottom by default, or sit at explicit coordinates when given a `position`.
+
+```ts
+const pdf = new Document({ page_size: "A4", margin: 50 });
+const page = pdf.create_page();
+
+page.add(
+  page.text({ content: "Invoice", style: { font_size: 28, font_weight: "bold" } }),
+  page.text({ content: "Thank you for your business.", style: { color: "#6b7280" } }),
+);
+
+await pdf.build("invoice.pdf");
+```
+
+## Document and Page
+
+```ts
+new Document(options?: DocumentOptions)
+pdf.create_page(theme?: Theme): Page
+pdf.add_page(): Page
+pdf.set_theme(theme: Theme): void
+pdf.load_font_sync(name: string, file_path: string, variable?: boolean): void
+pdf.load_image_sync(name: string, file_path: string): void
+await pdf.build(file_path: string): Promise<void>
+await pdf.prepare_pdf(): Promise<any>
+await pdf.render_to(file_path: string): Promise<void>
+
+interface DocumentOptions {
+  page_size?: "A4" | "Letter" | "Legal" | "Custom";
+  custom_dimensions?: { width: number; height: number };
+  margin?: number | MarginValues;
+  parse_markdown?: boolean;
+}
+```
+
+`build` is `prepare_pdf` followed by `render_to`. The split exists so a caller can measure
+before rendering; `Doc` uses it for pagination.
+
+## Page factories
+
+The page builds elements but does not place them. Add what you build with `page.add` or a
+container's `add`.
+
+```ts
+page.text(options: CreateTextOptions): TextElement
+page.rect(options: CreateRectOptions): RectElement
+page.image(options: CreateImageOptions): ImageElement
+page.table(options: CreateTableOptions): TableElement
+page.create_container(options?: CreateContainerOptions): ContainerElement
+page.header_container(options?: CreateContainerOptions): HeaderContainer
+page.footer_container(options?: CreateContainerOptions): FooterContainer
+page.add(...elements: BaseElement[]): this
+```
+
+Common option shapes:
+
+```ts
+interface CreateTextOptions {
+  content: string;
+  style?: StyleProperties;
+  classname?: string;
+  width?: number;
+  position?: { x: number; y: number };
+  parse_markdown?: boolean;
+  z_index?: number;
+}
+interface CreateRectOptions {
+  width?: number; height?: number;
+  style?: StyleProperties; shape_style?: ShapeStyle;
+  position?: { x: number; y: number }; z_index?: number;
+}
+interface CreateImageOptions {
+  name: string; width?: number; height?: number;
+  position?: { x: number; y: number }; z_index?: number;
+}
+```
+
+A `position` makes an element explicit and absolute on the page. Without one it joins the
+flow. `z_index` orders overlapping elements. `image` takes the `name` of an image
+registered with `load_image_sync`, and `rect` colors come from `style.background_color` or
+a `shape_style` with `fill_color` and `stroke_color`.
+
+## Containers and layout
+
+A container groups children with a flow or flex layout.
+
+```ts
+type ContainerLayout =
+  | { type: "flex"; direction: "row" | "column"; justify?: FlexJustify; align?: FlexAlign; gap?: number }
+  | { type: "flow"; gap?: number };
+```
+
+```ts
+const row = page.create_container({
+  layout: { type: "flex", direction: "row", justify: "space-between", align: "center", gap: 12 },
+});
+row.add(
+  page.text({ content: "Left" }),
+  page.text({ content: "Right" }),
+);
+page.add(row);
+```
+
+`justify` is one of `flex-start`, `flex-end`, `center`, `space-between`, `space-around`,
+`space-evenly`. `align` is one of `flex-start`, `flex-end`, `center`, `stretch`, `baseline`.
+Containers also accept `style`, `width`, `height`, `position`, and `classname`.
+
+## Themes
+
+A theme defines named colors and shape defaults, applied to elements by type and by
+classname. Build one with `create_theme` and attach it per page or document wide.
+
+```ts
+const theme = create_theme("report", {
+  colors: { primary: "#0f0f0f", muted: "#737373", accent: "#404040" },
+});
+pdf.set_theme(theme);
+const page = pdf.create_page(theme);
+theme.get_color("primary");
+```
+
+---
+
+# Color
+
+`Color` builds a color from one input form and converts to any other. Construct it as a
+call or with `new`; both work. You cannot mix input forms.
+
+```ts
+const a = Color({ hex: "#2563eb" });
+const b = new Color({ rgb: [37, 99, 235] });
+const c = Color({ hsl: [217, 91, 60] });
+
+a.to_hex();    // "#2563eb"
+a.to_rgb();    // "rgb(37, 99, 235)"
+a.to_rgba();   // "rgba(37, 99, 235, 1)"
+a.alpha(0.5);  // new Color at 50% opacity
+a.lighten(0.1);
+a.darken(0.1);
+a.mix(b, 0.5);
+a.is_dark();   // true
+```
+
+```ts
+type ColorInput =
+  | { hex: string }
+  | { rgb: [number, number, number] }
+  | { rgba: [number, number, number, number] }
+  | { hsl: [number, number, number] }
+  | { hsla: [number, number, number, number] };
+```
+
+A `Color` is accepted anywhere a color is, so `ColorLike = string | Color`. Pass a hex
+string or a `Color` to any `color`, `background_color`, or shape color field.
+
+---
+
+# Notes for generation
+
+Use `Doc` unless the task needs exact positioning. In `Doc`, structured inline nodes are
+more reliable than markdown for generated text. Font families are the six bundled names;
+`font_weight` produces real weights. Charts and tables are blocks, not separate calls.
+Build is always awaited and writes a file. In `Document`, elements built by the page
+factories must be added with `page.add` or a container's `add` before they render.
