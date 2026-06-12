@@ -18,10 +18,10 @@ import {
 } from "./inline";
 import { RichTextElement } from "./rich_text";
 import { FormulaElement } from "./formula";
+import { InlineFlowElement } from "./inline_flow";
 import { ChartElement } from "./chart";
 import type {
   Block,
-  Inline,
   InlineContent,
   RoleStyles,
   StyleRole,
@@ -98,45 +98,13 @@ const build_text = (
     );
   }
 
-  const container = page.create_container({ layout: { type: "flow", gap: 4 } });
   const formula_style = resolve_style("formula", undefined, set_styles);
-  let run: Array<string | Inline> = [];
-
-  const flush_run = (): void => {
-    if (run.length === 0) return;
-    const run_content: InlineContent = run.length === 1 ? run[0]! : run;
-    if (has_structured(run_content)) {
-      container.add(
-        new RichTextElement(
-          to_segments(
-            run_content,
-            seg_options(set_styles, !!style.text_markdown),
-          ),
-          style,
-        ),
-      );
-    } else {
-      container.add(
-        page.text({
-          content: to_inline_array(run_content).map(inline_to_plain).join(""),
-          parse_markdown: !!style.text_markdown,
-          style,
-        }),
-      );
-    }
-    run = [];
-  };
-
-  for (const node of nodes) {
-    if (typeof node === "object" && node.type === "formula") {
-      flush_run();
-      container.add(new FormulaElement(node.text, formula_style));
-    } else {
-      run.push(node);
-    }
-  }
-  flush_run();
-  return container;
+  return new InlineFlowElement(
+    nodes,
+    style,
+    seg_options(set_styles, !!style.text_markdown),
+    formula_style,
+  );
 };
 
 const build_list_item = (
