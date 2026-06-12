@@ -1,6 +1,6 @@
 {
   "name": "@nemu-ai/pdf",
-  "version": "1.5.2",
+  "version": "1.5.3",
   "description": "PDF generation for Node and Bun with a declarative document API and a low level element API, bundled variable fonts with real weights, LaTeX math, native charts, and theming.",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
