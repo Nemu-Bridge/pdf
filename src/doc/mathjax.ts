@@ -1,5 +1,6 @@
 import { pathToFileURL } from "node:url";
 import { mathjax } from "@mathjax/src/js/mathjax.js";
+import "@mathjax/src/js/util/asyncLoad/node.js";
 import { TeX } from "@mathjax/src/js/input/tex.js";
 import { SVG } from "@mathjax/src/js/output/svg.js";
 import { liteAdaptor } from "@mathjax/src/js/adaptors/liteAdaptor.js";
@@ -14,11 +15,21 @@ RegisterHTMLHandler(adaptor);
 
 const tex_packages = ["base", "ams", "newcommand", "configmacros"];
 
-const make_document = (font: unknown): unknown =>
-  mathjax.document("", {
+const make_document = (font: unknown): unknown => {
+  const document = mathjax.document("", {
     InputJax: new TeX({ packages: tex_packages }),
     OutputJax: new SVG({ fontCache: "none", fontData: font }),
   });
+  const dynamic_font = font as { loadDynamicFilesSync?: () => void };
+  if (typeof dynamic_font.loadDynamicFilesSync === "function") {
+    try {
+      dynamic_font.loadDynamicFilesSync();
+    } catch {
+      void 0;
+    }
+  }
+  return document;
+};
 
 const font_packages: Record<string, string> = {
   termes: "@mathjax/mathjax-termes-font/js/svg.js",
